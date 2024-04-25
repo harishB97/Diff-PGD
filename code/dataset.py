@@ -142,7 +142,7 @@ def _imagenet(split: str) -> Dataset:
             transforms.ToTensor()
         ])
     elif split == "test":
-        subdir = os.path.join(dir, "val")
+        subdir = os.path.join(dir, "imagenet-val")
         transform = transforms.Compose([
             transforms.Resize(256),
             # transforms.Resize((384, 384)),

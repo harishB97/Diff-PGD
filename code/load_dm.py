@@ -26,7 +26,7 @@ from utils import *
 
 
 def get_imagenet_dm_conf(class_cond=False, respace="", device='cuda',
-                         model_path='/ssdscratch/hxue45/data/Diff-Smoothing/ckpt/dm/256x256_diffusion_uncond.pt'):
+                         model_path='ckpt/dm/256x256_diffusion_uncond.pt'):
 
     defaults = dict(
         clip_denoised=True,

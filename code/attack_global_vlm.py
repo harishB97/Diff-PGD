@@ -100,10 +100,10 @@ def generate_x_adv_denoised(x, y, diffusion, model, classifier, pgd_conf, device
     return x_adv
 
 @torch.no_grad()
-def generate_x_adv_denoised_v2(x, y, diffusion, model, classifier, pgd_conf, device, t):
+def generate_x_adv_denoised_v2(x, diffusion, model, victim, pgd_conf, device, t):
     
     
-    net = Denoised_Classifier(diffusion, model, classifier, t)
+    net = Denoised_Classifier(diffusion, model, victim, t)
 
     
     delta = torch.zeros(x.shape).to(x.device)
@@ -125,8 +125,8 @@ def generate_x_adv_denoised_v2(x, y, diffusion, model, classifier, pgd_conf, dev
 
         with torch.enable_grad():
 
-            loss = loss_fn(classifier(x_diff), y)
-
+            loss = victim(x_diff)
+            
             loss.backward()
 
             grad_sign = x_diff.grad.data.sign()
@@ -141,7 +141,7 @@ def generate_x_adv_denoised_v2(x, y, diffusion, model, classifier, pgd_conf, dev
 
 
 
-def Attack_Global(classifier, device, respace, t, eps=16, iter=10, name='attack_global', alpha=2, version='v1', skip=200):
+def Attack_Global(classifier: str, device, respace, t, eps=16, iter=10, name='attack_global', alpha=2, version='v1', skip=200):
     
     
     pgd_conf = gen_pgd_confs(eps=eps, alpha=alpha, iter=iter, input_range=(0, 1))
@@ -152,15 +152,13 @@ def Attack_Global(classifier, device, respace, t, eps=16, iter=10, name='attack_
 
 
     
-    classifier = get_archs(classifier, 'imagenet')
-    
-    classifier = classifier.to(device)
-    classifier.eval()
+    victim = get_archs(classifier, 'imagenet') # TODO: Update this function, this function is currently only for getting classifiers
+    victim = victim.to(device)
+    victim.eval()
     
     dataset = get_dataset(
         'imagenet', split='test'
-    )
-    
+    ) # TODO: Update to get other datasets too
 
     model, diffusion = get_imagenet_dm_conf(device=device, respace=respace)
     
@@ -172,17 +170,18 @@ def Attack_Global(classifier, device, respace, t, eps=16, iter=10, name='attack_
         time_st = time.time()
         print(f'{c}/{dataset.__len__()//skip}')
 
-
+        # TODO: The data we get may be different not necessarily image and label
         x, y = dataset[i]
         x = x[None, ].to(device)
         y = torch.tensor(y)[None, ].to(device)
         
-        y_pred = classifier(x).argmax(1) # original prediction
+        # y_pred = classifier(x).argmax(1) # original prediction
 
         if version == 'v1':
-            x_adv = generate_x_adv_denoised(x, y_pred, diffusion, model, classifier, pgd_conf, device, t)
+            raise NotImplementedError
+            # x_adv = generate_x_adv_denoised(x, y_pred, diffusion, model, classifier, pgd_conf, device, t)
         elif version == 'v2':
-            x_adv = generate_x_adv_denoised_v2(x, y_pred, diffusion, model, classifier, pgd_conf, device, t)
+            x_adv = generate_x_adv_denoised_v2(x, diffusion, model, victim, pgd_conf, device, t)
 
         cprint('time: {:.3}'.format(time.time() - time_st), 'g')
 
